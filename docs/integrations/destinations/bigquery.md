@@ -1,4 +1,4 @@
----
+z---
 description: >-
   BigQuery is a serverless, highly scalable, and cost-effective data warehouse
   offered by Google Cloud Provider.
@@ -11,22 +11,23 @@ description: >-
 The Airbyte BigQuery destination allows you to sync data to BigQuery. BigQuery is a serverless, highly scalable, and cost-effective data warehouse offered by Google Cloud Provider.
 
 There are two flavors of connectors for this destination:
-1. `destination-bigquery`: This is producing the standard Airbyte outputs using a `_airbyte_raw_*` tables storing the JSON blob data first. Afterward, these are transformed and normalized into separate tables, potentially "exploding" nested streams into their own tables if [basic normalization](../../understanding-airbyte/basic-normalization.md) is configured. 
-2. `destination-bigquery-denormalized`: Instead of splitting the final data into multiple tables, this destination leverages BigQuery capabilities with [Structured and Repeated fields](https://cloud.google.com/bigquery/docs/nested-repeated) to produce a single "big" table per stream. This does not write the `_airbyte_raw_*` tables in the destination and normalization from this connector is not supported at this time.
+
+* `destination-bigquery`: This produces the standard Airbyte tables `_airbyte_raw_*` with the JSON blob data. If [basic normalization](../../understanding-airbyte/basic-normalization.md) is configured, these tables are then transformed and normalized into separate tables, potentially "exploding" nested streams into their own tables. 
+* `destination-bigquery-denormalized`: Instead of splitting the final data into multiple tables, this destination leverages BigQuery capabilities with [Structured and Repeated fields](https://cloud.google.com/bigquery/docs/nested-repeated) to produce a single "big" table per stream. This does not create the `_airbyte_raw_*` tables in the destination. Normalization for this connector is not supported at this time.
 
 ### Sync overview
 
 #### Output schema of `destination-bigquery`
 
-Each stream will be output into its own table in BigQuery. Each table will contain 3 columns:
+Each stream will be output into its own table in BigQuery. Each table will contain three columns:
 
-* `_airbyte_ab_id`: a uuid assigned by Airbyte to each event that is processed. The column type in BigQuery is `String`.
+* `_airbyte_ab_id`: a UUID assigned by Airbyte to each event that is processed. The column type in BigQuery is `String`.
 * `_airbyte_emitted_at`: a timestamp representing when the event was pulled from the data source. The column type in BigQuery is `String`. Due to a Google [limitations](https://cloud.google.com/bigquery/docs/loading-data-cloud-storage-csv#data_types) for data migration from GCs to BigQuery by its native job - the timestamp (seconds from 1970' can't be used). Only date format, so only String is accepted for us in this case.
-* `_airbyte_data`: a json blob representing with the event data. The column type in BigQuery is `String`.
+* `_airbyte_data`: a JSON blob representing the event data. The column type in BigQuery is `String`.
 
 #### Features
 
-| Feature | Supported?\(Yes/No\) | Notes |
+| Feature | Supported? \(Yes/No\) | Notes |
 | :--- | :--- | :--- |
 | Full Refresh Sync | Yes |  |
 | Incremental - Append Sync | Yes |  |
@@ -35,13 +36,9 @@ Each stream will be output into its own table in BigQuery. Each table will conta
 | Namespaces | Yes |  |
 
 ## Uploading options
-There are 2 available options to upload data to bigquery `Standard` and `GCS Staging`.
-- `Standard` is option to upload data directly from your source to BigQuery storage. This way is faster and requires less resources than GCS one.
-Please be aware you may see some fails for big datasets and slow sources, i.e. if reading from source takes more than 10-12 hours. 
-This is caused by the Google BigQuery SDK client limitations. For more details please check https://github.com/airbytehq/airbyte/issues/3549
-- `GCS Uploading (CSV format)`. This approach has been implemented in order to avoid the issue for big datasets mentioned above.
-At the first step all data is uploaded to GCS bucket and then all moved to BigQuery at one shot stream by stream.
-The destination-gcs connector is partially used under the hood here, so you may check its documentation for more details.
+There are two available options to upload data to BigQuery.
+- The `Standard` option uploads data directly from your source to BigQuery. This is faster and requires fewer resources than the GCS Staging option. Be aware you may experience some failures for big datasets and slow sources (i.e. if reading from the source takes more than 10 hours). This is caused by the Google BigQuery SDK client limitations. For more details please check https://github.com/airbytehq/airbyte/issues/3549
+- The `GCS Staging` option has been implemented in order to avoid the issue for big datasets mentioned above. In the first step, all data is uploaded to a GCS bucket and then moved to BigQuery in one shot stream by stream. The (GCS destination)[../../integrations/destinations/gcs.md] connector is used under the hood here, so you may check its documentation for more details.
 
 
 ## Getting started
